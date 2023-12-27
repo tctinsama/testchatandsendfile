@@ -327,64 +327,63 @@ int main(int argc, char **argv){  //IP and port mentioned
 					
                 	break;
                 
-                case 4: // sending message
-        			printf("Enter peer IP address\t");
-        			scanf(" %[^\t\n]s",peer_ip);
-        			printf("Enter peer listening port number\t");
-        			scanf(" %[^\t\n]s",peer_port);
+                case 4: // gửi tin nhắn
+                    printf("Enter peer IP address\t");
+                    scanf(" %[^\t\n]s", peer_ip);
+                    printf("Enter peer listening port number\t");
+                    scanf(" %[^\t\n]s", peer_port);
 
-        			//create socket to contact the desired peer
-        			if ((peer_sock= socket(AF_INET, SOCK_STREAM, 0)) == ERROR){ 
-						perror("socket"); 
-						 // error checking the socket
-						kill(child,SIGKILL); // on exit, the created lsitening process to be killed
-						exit(-1);  
-					} 
-	  
-					peer_connect.sin_family = AF_INET; // family
-					peer_connect.sin_port =htons(atoi(peer_port)); // Port No and htons to convert from host to network byte order. atoi to convert asci to integer
-					peer_connect.sin_addr.s_addr = inet_addr(peer_ip);//IP addr in ACSI form to network byte order converted using inet
-					bzero(&peer_connect.sin_zero, 8); //padding zeros
-					
-					/*try to connect desired peer*/
-					//pointer casted to sockaddr*
-					if((connect(peer_sock, (struct sockaddr *)&peer_connect,sizeof(struct sockaddr_in)))  == ERROR){ 
-						perror("connect");
-						kill(child,SIGKILL); // on exit, the created lsitening process to be killed
-						exit(-1);
-					}
+                    // Tạo socket để liên lạc với peer mong muốn
+                    if ((peer_sock = socket(AF_INET, SOCK_STREAM, 0)) == ERROR) {
+                        perror("socket");
+                        kill(child, SIGKILL);
+                        exit(-1);
+                    }
 
-					printf("Enter message:\t");
-					scanf(" %[^\t\n]s",message);
-					send(peer_sock, message, strlen(message) ,0);
+                    peer_connect.sin_family = AF_INET; 
+                    peer_connect.sin_port = htons(atoi(peer_port));
+                    peer_connect.sin_addr.s_addr = inet_addr(peer_ip);
+                    bzero(&peer_connect.sin_zero, 8);
 
-					//message recieve starts from here
-					bzero(message,BUFFER);
-					int message_size=0;
-					int len_recd=0; 
-					while((message_size = recv(peer_sock, message, BUFFER, 0)) > 0){ // recieve file sent by peer 
-						printf("%s", message);
+                    if ((connect(peer_sock, (struct sockaddr *)&peer_connect, sizeof(struct sockaddr_in))) == ERROR) {
+                        perror("connect");
+                        kill(child, SIGKILL);
+                        exit(-1);
+                    }
 
-						bzero(message,BUFFER);
-						
-						//error in recieve
-						if(message_size == 0 || message_size != 512) { 								
-							break;
-						}
-					}
+                    // Nhập và gửi tin nhắn liên tục cho đến khi người dùng nhập "exit"
+                    printf("Enter message:\t");
+                    scanf(" %[^\t\n]s", message);
+                    while (strcmp(message, "exit") != 0) {
+                        send(peer_sock, message, strlen(message), 0);
 
-					//error in recieve
-					if(message_size < 0){ 
-						
-						exit(1);
-					}
-					
-					
+                        // Nhận và hiển thị tin nhắn phản hồi từ peer
+                        bzero(message, BUFFER);
+                        int message_size = 0;
+                        int len_recd = 0;
+                        while ((message_size = recv(peer_sock, message, BUFFER, 0)) > 0) {
+                            printf("%s", message);
 
-					close(peer_sock); //close socket
-						
-					
-                	break;
+                            bzero(message, BUFFER);
+
+                            if (message_size == 0 || message_size != 512) {
+                                break;
+                            }
+                        }
+
+                        // Kiểm tra nếu tin nhắn là "exit" để thoát vòng lặp
+                        if (strcmp(message, "exit") == 0) {
+                            break;
+                        }
+
+                        // Tiếp tục nhập tin nhắn tiếp theo
+                        printf("Enter message:\t");
+                        scanf(" %[^\t\n]s", message);
+                    }
+
+                    close(peer_sock);
+                    break;
+
 
 
         		case 5:  //when client want to terminate connection with server  
