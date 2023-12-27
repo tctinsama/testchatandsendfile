@@ -192,9 +192,10 @@ int main(int argc, char **argv){  //IP and port mentioned
 
 	//----------------------------------------------------------------------------------------------
 
-    //ham gui tin nhan lien tuc 
-    void sendContinuousMessages(int peer_sock) {
+    // Hàm gửi tin nhắn liên tục 
+void sendContinuousMessages(int peer_sock) {
     char message[BUFFER];
+    char response[BUFFER];
 
     printf("Enter message (type 'exit' to stop):\n");
 
@@ -209,18 +210,26 @@ int main(int argc, char **argv){  //IP and port mentioned
         send(peer_sock, message, strlen(message), 0);
 
         // Nhận và hiển thị tin nhắn phản hồi từ peer
-        bzero(message, BUFFER);
         int message_size = 0;
-        int len_recd = 0;
-        while ((message_size = recv(peer_sock, message, BUFFER, 0)) > 0) {
-            printf("Peer's reply: %s\n", message);
+        int total_received = 0;
 
-            bzero(message, BUFFER);
-
-            if (message_size == 0 || message_size != 512) {
+        // Nhận dữ liệu từ peer
+        while ((message_size = recv(peer_sock, response + total_received, BUFFER - total_received, 0)) > 0) {
+            total_received += message_size;
+            
+            // Kiểm tra xem tin nhắn đã kết thúc hay chưa
+            if (response[total_received - 1] == '\0') {
+                printf("Peer's reply: %s\n", response);
                 break;
             }
         }
+
+        if (message_size < 0) {
+            perror("Receive failed");
+            break;
+        }
+
+        bzero(response, BUFFER);
     }
 
     printf("Conversation ended.\n");
