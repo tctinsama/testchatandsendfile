@@ -191,6 +191,42 @@ int main(int argc, char **argv){  //IP and port mentioned
 	}//close if of fork system call
 
 	//----------------------------------------------------------------------------------------------
+
+    //ham gui tin nhan lien tuc 
+    void sendContinuousMessages(int peer_sock) {
+    char message[BUFFER];
+
+    printf("Enter message (type 'exit' to stop):\n");
+
+    while (1) {
+        printf("Your message: ");
+        scanf(" %[^\t\n]s", message);
+
+        if (strcmp(message, "exit") == 0) {
+            break;
+        }
+
+        send(peer_sock, message, strlen(message), 0);
+
+        // Nhận và hiển thị tin nhắn phản hồi từ peer
+        bzero(message, BUFFER);
+        int message_size = 0;
+        int len_recd = 0;
+        while ((message_size = recv(peer_sock, message, BUFFER, 0)) > 0) {
+            printf("Peer's reply: %s\n", message);
+
+            bzero(message, BUFFER);
+
+            if (message_size == 0 || message_size != 512) {
+                break;
+            }
+        }
+    }
+
+    printf("Conversation ended.\n");
+}
+
+
 	while(1)
 	{
 		//DISPLAY MENU FOR USER INPUTS
@@ -351,35 +387,7 @@ int main(int argc, char **argv){  //IP and port mentioned
                         exit(-1);
                     }
 
-                    // Nhập và gửi tin nhắn liên tục cho đến khi người dùng nhập "exit"
-                    printf("Enter message:\t");
-                    scanf(" %[^\t\n]s", message);
-                    while (strcmp(message, "exit") != 0) {
-                        send(peer_sock, message, strlen(message), 0);
-
-                        // Nhận và hiển thị tin nhắn phản hồi từ peer
-                        bzero(message, BUFFER);
-                        int message_size = 0;
-                        int len_recd = 0;
-                        while ((message_size = recv(peer_sock, message, BUFFER, 0)) > 0) {
-                            printf("%s", message);
-
-                            bzero(message, BUFFER);
-
-                            if (message_size == 0 || message_size != 512) {
-                                break;
-                            }
-                        }
-
-                        // Kiểm tra nếu tin nhắn là "exit" để thoát vòng lặp
-                        if (strcmp(message, "exit") == 0) {
-                            break;
-                        }
-
-                        // Tiếp tục nhập tin nhắn tiếp theo
-                        printf("Enter message:\t");
-                        scanf(" %[^\t\n]s", message);
-                    }
+                    sendContinuousMessages(peer_sock);
 
                     close(peer_sock);
                     break;
